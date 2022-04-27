@@ -51,7 +51,9 @@ def send_talk_alert(text,mobile_web_url,web_url=None):
 
 class FireAlert:
   def __init__(self,buzzer_pin=17):
-    self.average= 1015
+    
+    self.average=0
+
     self.sum=0
     self.count=0
     self.danger_count =0

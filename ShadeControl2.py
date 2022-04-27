@@ -1,10 +1,9 @@
 from AnalogSpi import AnalogSpi
 import RPi.GPIO as GPIO
-# from homeiot import angle_blind
+from gpiozero import AngularServo
 import time
 from datetime import datetime
 from FireAlert import FireAlert
-from gpiozero import AngularServo
 
 # 오전 창문열고 오후면 창문닫는다
 # 아침 6시~ 저녁 8시 열고 나중 닫음 
@@ -22,17 +21,15 @@ from gpiozero import AngularServo
 
 # 밤에는 if값이 조도센서값 1000 이하인 거, 도어모터가 닫히는 방향인 거 외에 동일한 작동 
 
-# 지터링이 심하다 시간나면 앵귤러서보모터 클래스로 바꿔볼것 
-
+angle_blind_test=AngularServo(19, min_angle=-90, max_angle=90, min_pulse_width=0.0004, max_pulse_width=0.0024)
 class ShadesControl:
-  def __init__(self,SERVO_PIN = 22):
-    self.SERVO_PIN = SERVO_PIN 
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(SERVO_PIN, GPIO.OUT)
-    self.servo = GPIO.PWM(SERVO_PIN,50)
-    self.servo.start(0)
+  def __init__(self):
+    
+    
+    angle_blind_test.value=self.dc
+    
     self.dc = 7.5
-    self.servo.ChangeDutyCycle(self.dc)
+    
 
 
   def is_night(self):
@@ -48,40 +45,41 @@ class ShadesControl:
       if(self.is_night()):
         #밤일때
         if sensor_value<1000:
-          print("밤, 조도센서 1000보다 큼")
+          print("is_night= true, 조도센서 1000보다 큼")
           try:
             if self.dc < 12.5 :
-              self.servo.start(0)
+              
               self.dc += 0.1
-              self.servo.ChangeDutyCycle(self.dc)
+              angle_blind_test.value=self.dc
             else:
-              self.servo.stop()
-              print("모터 끝이라 작동x")
+                self.dc+=0
+                angle_blind_test.value-self.dc
           except KeyboardInterrupt:
-            self.servo.stop()
-            GPIO.cleanup()
+            self.dc+=0
+            angle_blind_test.value-self.dc
         else:
-                self.servo.stop()
+            self.dc+=0
+            angle_blind_test.value-self.dc
       else:
         #낮일때
         if sensor_value>450:
-          print("낮, 조도센서 450보다 작음")
+          print("is_night= false, 조도센서 450보다 작음")
           try:
             if self.dc > 2.5 :
-              self.servo.start(0)
+              
               self.dc -= 0.1
-              self.servo.ChangeDutyCycle(self.dc)
+              angle_blind_test.value=self.dc
             else:
-              self.servo.stop()
-              print("모터 끝이라 작동x")
+                self.dc+=0
+                angle_blind_test.value-self.dc
 
           except KeyboardInterrupt:
-            self.servo.stop()
-            GPIO.cleanup()      
+            self.dc+=0
+            angle_blind_test.value-self.dc    
         else:
-            self.servo.stop()
+            self.dc+=0
+            angle_blind_test.value-self.dc
 
     except KeyboardInterrupt:
-      self.servo.stop()
-      GPIO.cleanup()      
-
+        self.dc+=0
+        angle_blind_test.value-self.dc

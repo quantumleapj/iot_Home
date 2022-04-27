@@ -21,7 +21,12 @@ import os
 import cv2
 from AnalogSpi import AnalogSpi
 from FireAlert import FireAlert
+
+# from ShadesControl import ShadesControl
+# from ShadeControl2 import ShadesControl
+
 from ShadesControl import ShadesControl
+
 
 
 
@@ -47,6 +52,8 @@ frame_size = (640,480)
 
 fourcc=cv2.VideoWriter_fourcc(*'mp4v')
 writer=None
+
+
 
 
 def start_record():
@@ -274,8 +281,12 @@ def on_message(client,userdata,msg):
             automode_true=1
             shade_state=True
             print(shade_state)
-            
-            # if automode_true==1:
+            count=0
+            if (automode_true==1 and shade_state==True):
+                if count==0:
+                    shades_thread=threading.Thread(target=analog_sensor_shade,args=())
+                    shades_thread.start()
+                    count+=1
 
         elif(msg.topic=="iot/blind" and value=="automode_off"):
             automode_true=0
@@ -316,9 +327,13 @@ def on_message(client,userdata,msg):
                 print("블라각 제어")
                 angle_blind.angle=float(value)
                 print(f"{msg.topic} {value}")
-        elif (automode_true==1 and shade_state==True):
-            shades_thread=threading.Thread(target=analog_sensor_shade,args=())
-            shades_thread.start()
+        # elif (automode_true==1 and shade_state==True):
+        #     count=0
+        #     if count==0:
+
+                # shades_thread=threading.Thread(target=analog_sensor_shade,args=())
+                # shades_thread.start()
+                # count+=1
 
 
 
@@ -407,7 +422,88 @@ def bath_water_detect():
 
 
 
+
+#물높이 센서(spi)
+
+# def sensor_data():
+    
+#     while True:
+        
+#         pot_value0 = readadc(pot_channel0)
+#         print("수위값:", pot_value0)
+#         if pot_value0>680:
+#             bath_water_detect()
+#             sleep(295)
+            
+            
+#         sleep(5)
+
+class ShadesControl:
+  def __init__(self):
+    
+    self.dc = 7.5
+    angle_blind.value=self.dc/100
+    
+    
+    
+
+
+  def is_night(self):
+    hour=datetime.now().hour
+    if hour < 6 or hour>19 :
+      return True
+    else:
+      return False
+
+  def run(self,sensor_value):
+    # while문 안에 넣을것
+    try:
+      if(self.is_night()):
+        #밤일때
+        if sensor_value<1000:
+          print("is_night= true, 조도센서 1000보다 큼")
+          try:
+            if self.dc < 12.5*100 :
+              
+              self.dc += 0.1 *100
+              angle_blind.value=self.dc/100
+            else:
+                self.dc+=0
+                angle_blind.value=self.dc/100
+          except KeyboardInterrupt:
+            self.dc+=0
+            angle_blind.value=self.dc/100
+        else:
+            self.dc+=0
+            angle_blind.value=self.dc/100
+      else:
+        #낮일때
+        if sensor_value>450:
+          print("is_night= false, 조도센서 450보다 작음")
+          try:
+            if self.dc > 2.5 *100 :
+              
+              self.dc -= 0.1 *100
+              angle_blind.value=self.dc/100
+            else:
+                self.dc+=0
+                angle_blind.value=self.dc/100
+
+          except KeyboardInterrupt:
+            self.dc+=0
+            angle_blind.value=self.dc/100    
+        else:
+            self.dc+=0
+            angle_blind.value=self.dc/100
+
+    except KeyboardInterrupt:
+        self.dc+=0
+        angle_blind.value=self.dc/100
+
+
+
 # 아날로그 센서 
+
 def analog_sensors():
     i=0
     analog_spi=AnalogSpi()
